@@ -1,0 +1,49 @@
+#!/bin/bash
+sleep 0.5
+data/titlebar 0
+wid=$(xdotool getactivewindow)
+xdotool windowsize $wid 100% 100%
+screencols=$(tput cols)
+screenlines=$(tput lines)
+screenwidth=$(xdotool getwindowgeometry $wid | tail -1 | cut -d' ' -f4 | cut -d'x' -f1)
+screenheight=$(xdotool getwindowgeometry $wid | tail -1 | cut -d' ' -f4 | cut -d'x' -f2)
+cellwidth=$((screenwidth/screencols))
+cellheight=$((screenheight/screenlines))
+screenheight=$((screenlines*cellheight))
+screenwidth=$((screencols*cellwidth))
+echo $screencols > run/screen.cols
+echo $screenlines > run/screen.lines
+echo $screenwidth > run/screen.width
+echo $screenheight > run/screen.height
+echo $cellwidth > run/cell.width
+echo $cellheight > run/cell.height
+x=0
+y=0
+width=$((100*cellwidth))
+height=$((20*cellheight))
+xcell=1
+ycell=1
+wcell=101
+hcell=20
+xdotool windowsize $wid $width $height
+while read -n1 cmd ; do
+    clear
+    sed -n "$ycell,$((ycell+hcell))p" < data/bg | while read line ; do
+        cut -c $xcell-$((xcell+wcell))
+    done
+    case "$cmd" in
+        "a")
+            [ $x -ne 0 ] && x=$((x-cellwidth)) && xcell=$((xcell-1))
+        ;;
+        "s")
+            [ $((y+height)) -ne $screenheight ] && y=$((y+cellheight)) && ycell=$((ycell+1))
+        ;;
+        "d")
+            [ $((x+width)) -ne $screenwidth ] && x=$((x+cellwidth)) && xcell=$((xcell+1))
+        ;;
+        "w")
+            [ $y -ne 0 ] && y=$((y-cellheight)) && ycell=$((ycell-1))
+        ;;
+    esac
+    xdotool windowmove $wid $x $y
+done
